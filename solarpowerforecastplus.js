@@ -29,6 +29,7 @@ function SolarPowerForecastPlusNode(n) {
     RED.nodes.createNode(this,n);
 
     // Store local copies of the node configuration (as defined in the .html)
+    this.name = n.name;
     this.lat = n.lat;
     this.lon = n.lon;
     this.tilt = n.tilt * Math.PI / 180; // Convert to radians
@@ -43,15 +44,43 @@ function SolarPowerForecastPlusNode(n) {
     this.on("input", function(msg) {
       var date = new Date();
       if (msg.payload) {
+
           if (typeof msg.payload === 'object') {
 
-              if (msg.payload.tilt !== undefined) {
-                  this.tilt = msg.payload.tilt * Math.PI / 180; // Convert to radians
-              }
+            if (msg.payload.name !== undefined) {
+                this.name = msg.payload.name;
+            }
 
-              if (msg.payload.orientation !== undefined) {
-                  this.orientation = msg.payload.orientation * Math.PI / 180;  // Convert to radians
-              }
+            if (msg.payload.lat !== undefined) {
+                this.lat = msg.payload.lat;
+            }
+            if (msg.payload.lon !== undefined) {
+                this.lon = msg.payload.lon;
+            }
+
+            if (msg.payload.tilt !== undefined) {
+                this.tilt = msg.payload.tilt * Math.PI / 180;
+            }
+
+            if (msg.payload.orientation !== undefined) {
+                this.orientation = msg.payload.orientation * Math.PI / 180;
+            }
+
+            if (msg.payload.altitude !== undefined) {
+                this.altitude = msg.payload.altitude / 1000;
+            }
+
+            if (msg.payload.area !== undefined) {
+                this.area = msg.payload.area;
+            }
+
+            if (msg.payload.number !== undefined) {
+                this.number = msg.payload.number;
+            }
+
+            if (msg.payload.efficiency !== undefined) {
+                this.efficiency = msg.payload.efficiency / 100;
+            }
           }
       }
 
@@ -84,7 +113,7 @@ function SolarPowerForecastPlusNode(n) {
 
 	}
 
-      	msg.payload = {timestamp: date, powerforecast: moduleIrradiance * node.area * node.number * node.efficiency};
+      	msg.payload = {timestamp: date, name: name, powerforecast: moduleIrradiance * node.area * node.number * node.efficiency};
 
 
       // send out the message to the rest of the workspace.
