@@ -41,12 +41,12 @@ function SolarPowerForecastPlusNode(n) {
     var node = this;
 
     this.on("input", function(msg) {
+      var date = new Date();
       if (msg.payload) {
-          var date = new Date(msg.payload);
           if (typeof msg.payload === 'object') {
 
               if (msg.payload.tilt !== undefined) {
-                  this.tilt = msg.payload.tagName * Math.PI / 180; // Convert to radians
+                  this.tilt = msg.payload.tilt * Math.PI / 180; // Convert to radians
               }
 
               if (msg.payload.orientation !== undefined) {
@@ -84,7 +84,7 @@ function SolarPowerForecastPlusNode(n) {
 
 	}
 
-      	msg.payload = {timestamp: msg.payload, powerforecast: moduleIrradiance * node.area * node.number * node.efficiency};
+      	msg.payload = {timestamp: date, powerforecast: moduleIrradiance * node.area * node.number * node.efficiency};
 
 
       // send out the message to the rest of the workspace.
