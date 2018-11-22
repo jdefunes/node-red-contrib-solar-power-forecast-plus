@@ -43,18 +43,26 @@ module.exports = function(RED) {
 
         this.on("input", function(msg) {
             var date = new Date();
+
             if (msg.payload)
             {
                 if (typeof msg.payload === 'object')
                 {
                     if (msg.payload.tilt !== undefined)
                     {
-                       this.tilt = msg.payload.tilt * Math.PI / 180;
+                       node.tilt = (msg.payload.tilt*1) * Math.PI / 180;
                     }
+
                     if (msg.payload.orientation !== undefined)
                     {
-                        this.orientation = msg.payload.orientation * Math.PI / 180;
+                        node.orientation = (msg.payload.orientation*1) * Math.PI / 180;
                     }
+
+                    if (msg.payload.altitude !== undefined)
+                    {
+                       node.tilt = (msg.payload.altitude*1)  / 1000;
+                    }
+
                 }
             }
 
