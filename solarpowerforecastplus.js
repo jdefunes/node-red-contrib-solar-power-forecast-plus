@@ -20,114 +20,91 @@
  **/
 
 module.exports = function(RED) {
-"use strict";
-var SunCalc = require("suncalc");
+    "use strict";
+    var SunCalc = require("suncalc");
 
-// The main node definition - most things happen in here
-function SolarPowerForecastPlusNode(n) {
-    // Create a RED node
-    RED.nodes.createNode(this,n);
+    // The main node definition - most things happen in here
+    function SolarPowerForecastPlusNode(n) {
+        // Create a RED node
+        RED.nodes.createNode(this,n);
 
-    // Store local copies of the node configuration (as defined in the .html)
-    this.name = n.name;
-    this.lat = n.lat;
-    this.lon = n.lon;
-    this.tilt = n.tilt * Math.PI / 180; // Convert to radians
-    this.orientation = n.orientation * Math.PI / 180;  // Convert to radians
-    this.altitude = n.altitude / 1000; // Convert metres to kilometres
-    this.area = n.area;
-    this.number = n.number;
-    this.efficiency = n.efficiency / 100;
+        // Store local copies of the node configuration (as defined in the .html)
+        this.name = n.name;
+        this.lat = n.lat;
+        this.lon = n.lon;
+        this.tilt = n.tilt * Math.PI / 180; // Convert to radians
+        this.orientation = n.orientation * Math.PI / 180;  // Convert to radians
+        this.altitude = n.altitude / 1000; // Convert metres to kilometres
+        this.area = n.area;
+        this.panels = n.panels;
+        this.efficiency = n.efficiency / 100;
 
-    var node = this;
+        var node = this;
 
-    this.on("input", function(msg) {
-      var date = new Date();
-      if (msg.payload) {
-
-          if (typeof msg.payload === 'object') {
-
-            if (msg.payload.name !== undefined) {
-                this.name = msg.payload.name;
+        this.on("input", function(msg) {
+            var date = new Date();
+            if (msg.payload)
+            {
+                if (typeof msg.payload === 'object')
+                {
+                    if (msg.payload.tilt !== undefined)
+                    {
+                       this.tilt = msg.payload.tilt * Math.PI / 180;
+                    }
+                    if (msg.payload.orientation !== undefined)
+                    {
+                        this.orientation = msg.payload.orientation * Math.PI / 180;
+                    }
+                }
             }
 
-            if (msg.payload.lat !== undefined) {
-                this.lat = msg.payload.lat;
-            }
-            if (msg.payload.lon !== undefined) {
-                this.lon = msg.payload.lon;
-            }
+            var sunPosition = SunCalc.getPosition(date, node.lat, node.lon);
 
-            if (msg.payload.tilt !== undefined) {
-                this.tilt = msg.payload.tilt * Math.PI / 180;
+            // Adjust for suncalc's weird orientation
+            if (sunPosition.azimuth > Math.PI) {
+              sunPosition.azimuth -= Math.PI;
+            } else {
+              sunPosition.azimuth += Math.PI;
             }
 
-            if (msg.payload.orientation !== undefined) {
-                this.orientation = msg.payload.orientation * Math.PI / 180;
-            }
+    	      var airMass = -1;
+            var directIrradiance = 0;
+            var moduleIrradiance = 0;
 
-            if (msg.payload.altitude !== undefined) {
-                this.altitude = msg.payload.altitude / 1000;
-            }
+            if (sunPosition.altitude > 0) {
 
-            if (msg.payload.area !== undefined) {
-                this.area = msg.payload.area;
-            }
+                airMass = 1 / Math.cos((Math.PI / 2) - sunPosition.altitude);
 
-            if (msg.payload.number !== undefined) {
-                this.number = msg.payload.number;
-            }
+      	         // Direct irradiance on a surface perpendicular to sun's rays
+                directIrradiance = 1353 * ((1 - (0.14 * node.altitude))
+                  * Math.pow(0.7,Math.pow(airMass,0.678)) + (0.14 * node.altitude));
 
-            if (msg.payload.efficiency !== undefined) {
-                this.efficiency = msg.payload.efficiency / 100;
-            }
-          }
-      }
+                // moduleIrradiance includes direct and diffuse irradiance
+                moduleIrradiance = directIrradiance * (Math.cos(sunPosition.altitude)
+                  * Math.sin(node.tilt) * Math.cos(node.orientation - sunPosition.azimuth)
+                  +  Math.sin(sunPosition.altitude) * Math.cos(node.tilt))
+                  + (directIrradiance * 0.1 * ((Math.PI - node.tilt) / Math.PI));
 
-        var sunPosition = SunCalc.getPosition(date, node.lat, node.lon);
+    	         }
 
-        // Adjust for suncalc's weird orientation
-        if (sunPosition.azimuth > Math.PI) {
-          sunPosition.azimuth -= Math.PI;
-        } else {
-          sunPosition.azimuth += Math.PI;
-        }
-
-	      var airMass = -1;
-        var directIrradiance = 0;
-        var moduleIrradiance = 0;
-
-        if (sunPosition.altitude > 0) {
-
-          airMass = 1 / Math.cos((Math.PI / 2) - sunPosition.altitude);
-
-	         // Direct irradiance on a surface perpendicular to sun's rays
-          directIrradiance = 1353 * ((1 - (0.14 * node.altitude))
-            * Math.pow(0.7,Math.pow(airMass,0.678)) + (0.14 * node.altitude));
-
-          // moduleIrradiance includes direct and diffuse irradiance
-          moduleIrradiance = directIrradiance * (Math.cos(sunPosition.altitude)
-            * Math.sin(node.tilt) * Math.cos(node.orientation - sunPosition.azimuth)
-            +  Math.sin(sunPosition.altitude) * Math.cos(node.tilt))
-            + (directIrradiance * 0.1 * ((Math.PI - node.tilt) / Math.PI));
-
-	}
-
-      	msg.payload = {timestamp: date, name: name, powerforecast: moduleIrradiance * node.area * node.number * node.efficiency};
+          	msg.payload = {
+              timestamp: date.valueOf(),
+              powerforecast: moduleIrradiance * node.area * node.panels * node.efficiency
+            };
 
 
-      // send out the message to the rest of the workspace.
-      node.send(msg);
-    });
+          // send out the message to the rest of the workspace.
+          node.send(msg);
+        });
 
-    this.on("close", function() {
-        // Called when the node is shutdown - eg on redeploy.
-        // Allows ports to be closed, connections dropped etc.
-        // eg: this.client.disconnect();
-    });
-}
+        this.on("close", function() {
+            // Called when the node is shutdown - eg on redeploy.
+            // Allows ports to be closed, connections dropped etc.
+            // eg: this.client.disconnect();
+        });
+    }
 
-// Register the node by name. This must be called before overriding any of the
-// Node functions.
-RED.nodes.registerType("solar power forecast plus",SolarPowerForecastPlusNode);
+    // Register the node by name. This must be called before overriding any of the
+    // Node functions.
+    RED.nodes.registerType("solar power forecast plus",SolarPowerForecastPlusNode);
 }

@@ -42,8 +42,8 @@
     <input type="text" id="node-input-area" placeholder="1">
    </div>
    <div class="form-row">
-    <label for="node-input-number"><i class="icon-th"></i> Number of Panels</label>
-    <input type="text" id="node-input-number" placeholder="1">
+    <label for="node-input-panels"><i class="icon-th"></i> Number of Panels</label>
+    <input type="text" id="node-input-panels" placeholder="1">
    </div>
    <div class="form-row">
     <label for="node-input-efficiency"><i class="icon-cog"></i> Panel Efficiency (%)</label>
@@ -83,14 +83,14 @@
         color:"#ffcc66",
         defaults: {             // defines the editable properties of the node
             name: {value:""},   //  along with default values.
-            lat: {value:"40.490029"},
-            lon: {value:"-3.871547"},
+            lat: {value:"40.490029", required:true, validate:RED.validators.number()},
+            lon: {value:"-3.871547", required:true, validate:RED.validators.number()},
             tilt: {value:"0"},
             orientation: {value:"0"},
-            altitude: {value:"722"},
-            area: {value:"1"},
-            number: {value:"1"},
-            efficiency: {value:"0.15"},
+            altitude: {value:"722", required:true, validate:RED.validators.number()},
+            area: {value:"1", required:true, validate:RED.validators.number()},
+            panels: {value:"1", required:true, validate:RED.validators.number()},
+            efficiency: {value:"0.15", required:true, validate:RED.validators.number()},
         },
         inputs:1,                // set the number of inputs - only 0 or 1
         outputs:1,               // set the number of outputs - 0 to n
