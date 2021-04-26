@@ -63,6 +63,11 @@ module.exports = function(RED) {
                        node.tilt = (msg.payload.altitude*1)  / 1000;
                     }
 
+                    if (msg.payload.timestamp !== undefined)
+                    {
+                       date = new Date(msg.payload.timestamp);
+                    }
+
                 }
             }
 
